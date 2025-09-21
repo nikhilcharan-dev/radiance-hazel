@@ -9,32 +9,38 @@ import {useAnimations, useFBX, useGLTF} from '@react-three/drei'
 import { SkeletonUtils } from 'three-stdlib'
 import * as THREE from 'three'
 
-export default function Avatar({position}) {
+export default function Avatar({ position, avatarAnimations }) {
     const group = useRef(null);
     const { scene } = useGLTF('models/me.glb')
     const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
     const { nodes, materials } = useGraph(clone)
 
-    const {animations: wavingAnimations} = useFBX('animations/Waving.fbx');
-    wavingAnimations[0].name = "Waving";
+    const {animations: introAnimations} = useFBX('animations/Intro.fbx');
+    introAnimations[0].name = "Intro";
 
     const {animations: boredAnimations} = useFBX('animations/Bored.fbx');
     boredAnimations[0].name = "Bored";
 
-    const {actions} = useAnimations([wavingAnimations[0], boredAnimations[0]], group)
+    const {actions} = useAnimations([introAnimations[0], boredAnimations[0]], group)
 
     useFrame((state, delta) => {
-        group.current.getObjectByName('Head').lookAt(new THREE.Vector3(state.mouse.x, state.mouse.y, 2));
+        if(avatarAnimations !== 0) group.current.getObjectByName('Head').lookAt(new THREE.Vector3(state.mouse.x * 5, state.mouse.y, 5));
     })
 
     useEffect(() => {
         // actions['Waving'].reset().play();
-        actions['Bored'].reset().play();
+        console.log(avatarAnimations)
+        if(avatarAnimations === 0) {
+            actions['Intro'].play();
+        } else if(avatarAnimations === 1) {
+            actions["Intro"].fadeOut(1);
+            actions["Bored"].play();
+        }
 
         return () => {
-            // actions['Bored'].stop();
+
         }
-    }, []);
+    }, [avatarAnimations]);
 
     return (
         <group position={position} ref={group} dispose={null} scale={1}>

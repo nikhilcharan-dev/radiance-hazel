@@ -1,15 +1,17 @@
-import {Text, OrbitControls} from "@react-three/drei";
+import {Text, useFBX} from "@react-three/drei";
 import Avatar from "./Avatar.jsx";
 import { useEffect, useRef, useState} from "react";
 import gsap from "gsap";
-import { useThree } from "@react-three/fiber";
+import {useFrame, useThree} from "@react-three/fiber";
 
 
-export const Experience = () => {
+export const Experience = ({ setChanges }) => {
 
     const avatarRef = useRef(null);
     const textRef = useRef(null);
-    const { camera } = useThree();
+    const { camera, mouse } = useThree();
+
+    const [avatarAnimations, setAvatarAnimations] = useState(0);
 
     const [show, setShow] = useState(0);
 
@@ -17,8 +19,6 @@ export const Experience = () => {
 
     useEffect(() => {
         if(!camera) return;
-
-        // return;
 
         textRef.current.material.opacity = 0;
         textRef.current.material.transparent = true;
@@ -39,6 +39,11 @@ export const Experience = () => {
                 onUpdate: () => camera.updateProjectionMatrix(),
             },
             "-=1.5");
+
+        timeline.call(() => {
+            setAvatarAnimations(prev => prev + 1);
+            setChanges(prev => prev + 1)
+        })
 
         timeline.call(() => setShow(1))
 
@@ -75,13 +80,12 @@ export const Experience = () => {
             ease: "power2.easeInOut",
         }, "-=1")
 
+        timeline.call(() => setShow(2))
+
     }, [camera])
 
     return (
         <>
-            <OrbitControls enableZoom={false} />
-            <ambientLight intensity={1} />
-
             <Text
                 ref={textRef}
                 font='/fonts/hoshiki_satsuki.ttf'
@@ -96,7 +100,12 @@ export const Experience = () => {
             </Text>
 
             <group ref={avatarRef}>
-                <Avatar key={`avatar-${show}`}  position={[0,-1,0]} />
+                <Avatar
+                    key={`avatar-${show}`}
+                    position={[0,-1,0]}
+                    timeline={timeline}
+                    avatarAnimations={avatarAnimations}
+                />
             </group>
 
             <Text

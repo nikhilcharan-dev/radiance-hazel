@@ -16,7 +16,7 @@ function App() {
             <color attach="background" args={["#efeded"]} />
             <ambientLight intensity={1} />
 
-            <OrbitControls enableZoom={true} controls={[false]} />
+            <OrbitControls enableZoom={true}  />
 
             <Experience setChanges={setChanges} />
         </Canvas>

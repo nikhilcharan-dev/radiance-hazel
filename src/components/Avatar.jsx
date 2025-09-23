@@ -6,8 +6,18 @@ Command: npx gltfjsx@6.5.3 public/models/me.glb
 import React, {useEffect, useRef} from 'react'
 import {useFrame, useGraph} from '@react-three/fiber'
 import {useAnimations, useFBX, useGLTF} from '@react-three/drei'
-import { SkeletonUtils } from 'three-stdlib'
+import {SkeletonUtils} from 'three-stdlib'
 import * as THREE from 'three'
+import gsap from 'gsap'
+
+const animationFBX = [
+    "Falling", "Landing", "Bored", "BouncingFightIdle", "CrouchToStand",
+    "Pointing", "QuickFormalBow",
+    "Sitting",
+    "Taunt",
+    "Thankful",
+    "Waving"
+]
 
 export default function Avatar({ position, avatarAnimations }) {
     const group = useRef(null);
@@ -15,35 +25,59 @@ export default function Avatar({ position, avatarAnimations }) {
     const clone = React.useMemo(() => SkeletonUtils.clone(scene), [scene])
     const { nodes, materials } = useGraph(clone)
 
-    const {animations: introAnimations} = useFBX('animations/Intro.fbx');
-    introAnimations[0].name = "Intro";
+    const timeline = gsap.timeline()
 
-    const {animations: boredAnimations} = useFBX('animations/Bored.fbx');
-    boredAnimations[0].name = "Bored";
+    const convertToAnimations = React.useMemo( () => {
+        return (animationName) => {
+            const {animations} = useFBX(`animations/${animationName}.fbx`);
+            animations[0].name = animationName;
+            return animations[0];
+        }
+    }, []);
 
-    const {actions} = useAnimations([introAnimations[0], boredAnimations[0]], group)
+    const getAnimations = React.useMemo(() => {
+
+        return () => {
+            return animationFBX.map((animation) => {
+                return convertToAnimations(animation)
+            });
+        }
+
+    }, [convertToAnimations]);
+
+    const animations = getAnimations();
+    const {actions} = useAnimations(animations, group)
 
     useFrame((state, delta) => {
         if(avatarAnimations !== 0) group.current.getObjectByName('Head').lookAt(new THREE.Vector3(state.mouse.x * 5, state.mouse.y, 5));
     })
 
     useEffect(() => {
-        // actions['Waving'].reset().play();
-        console.log(avatarAnimations)
+
         if(avatarAnimations === 0) {
-            actions['Intro'].play();
+            actions['Falling'].reset().play();
         } else if(avatarAnimations === 1) {
-            actions["Intro"].fadeOut(1);
-            actions["Bored"].play();
+            actions["Falling"].stop();
+            timeline
+                .to({}, {
+                    duration: actions["Landing"].getClip().duration,
+                    onStart: () => actions["Landing"].reset().play(),
+                    onComplete: () => {
+                        actions["Landing"].stop();
+                        console.log("Landing Over")
+                        actions["Waving"].play();
+                    }
+                })
+        } else if(avatarAnimations === 2) {
+            actions["Waving"].stop();
+            actions["Sitting"].reset().fadeIn(0.5).play();
         }
 
-        return () => {
-
-        }
     }, [avatarAnimations]);
 
     return (
         <group position={position} ref={group} dispose={null} scale={1}>
+
             <group>
                 <primitive object={nodes.Hips} />
                 <skinnedMesh geometry={nodes.Wolf3D_Hair.geometry} material={materials.Wolf3D_Hair} skeleton={nodes.Wolf3D_Hair.skeleton} />

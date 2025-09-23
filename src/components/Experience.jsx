@@ -3,12 +3,16 @@ import Avatar from "./Avatar.jsx";
 import { useEffect, useRef, useState} from "react";
 import gsap from "gsap";
 import {useFrame, useThree} from "@react-three/fiber";
+import CloudBase from "./CloudBase.jsx";
+import Throne from "./Throne.jsx";
+import {useControls} from "leva";
 
 
 export const Experience = ({ setChanges }) => {
 
     const avatarRef = useRef(null);
     const textRef = useRef(null);
+    const throneRef = useRef(null);
     const { camera, mouse } = useThree();
 
     const [avatarAnimations, setAvatarAnimations] = useState(0);
@@ -18,10 +22,11 @@ export const Experience = ({ setChanges }) => {
     const timeline = gsap.timeline();
 
     useEffect(() => {
-        if(!camera) return;
+        if (!camera || !textRef.current || !throneRef.current) return;
 
         textRef.current.material.opacity = 0;
         textRef.current.material.transparent = true;
+
 
         timeline.to(camera.position, {
             x: 0,
@@ -42,10 +47,7 @@ export const Experience = ({ setChanges }) => {
 
         timeline.call(() => {
             setAvatarAnimations(prev => prev + 1);
-            setChanges(prev => prev + 1)
         })
-
-        timeline.call(() => setShow(1))
 
         timeline.to(textRef.current.material, {
             opacity: 1,        // fade in
@@ -68,19 +70,25 @@ export const Experience = ({ setChanges }) => {
             duration: 1,
         }, "-=1")
 
-        timeline.to(avatarRef.current.position, {
-            x: -2,
-            duration: 1,
+        timeline.to(throneRef.current.position, {
+            y: -0.5,
+            duration: 4,
             ease: "power2.easeInOut",
-        }, "-=1")
+        }, "-=4")
 
         timeline.to(textRef.current, {
-            letterSpacing: 1,
+            letterSpacing: 0.5,
             duration: 2,
-            ease: "power2.easeInOut",
-        }, "-=1")
+            ease: "power2.easeOut",
+        }, "-=1.5")
 
-        timeline.call(() => setShow(2))
+        timeline.to(throneRef.current.position, {
+            z: -.1,
+            duration: 1,
+            ease: "power2.easeOut",
+        })
+
+        timeline.call(() => setAvatarAnimations(prev => prev + 1), null,"-=1")
 
     }, [camera])
 
@@ -90,22 +98,23 @@ export const Experience = ({ setChanges }) => {
                 ref={textRef}
                 font='/fonts/hoshiki_satsuki.ttf'
                 position={[0.1, 0, -10]}
-                fillOpacity={show}
                 fontSize={0.6}
                 color="black"
                 anchorX="center"
                 anchorY="middle"
             >
-                Nikhil&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Charan
+                Nikhil&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Charan
             </Text>
 
             <group ref={avatarRef}>
                 <Avatar
-                    key={`avatar-${show}`}
                     position={[0,-1,0]}
                     timeline={timeline}
                     avatarAnimations={avatarAnimations}
                 />
+                <group ref={throneRef} position={[0, -20, -0.5]}>
+                    <Throne scale={.7} />
+                </group>
             </group>
 
             <Text
